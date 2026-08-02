@@ -1,0 +1,220 @@
+{
+  "ai": {
+    "provider": "deepseek",
+    "model": "deepseek-v4-flash",
+    "base_url": "https://api.deepseek.com",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "throttle_sec": 0.5,
+    "languages": ["zh", "en"],
+    "analysis_concurrency": 3,
+    "enrichment_concurrency": 2
+  },
+  "processing": {
+    "profiles_dir": "profiles-gix",
+    "default_profile": "gix-intelligent-design",
+    "profile_settings": {
+      "gix-intelligent-design": {
+        "threshold": 7.2,
+        "topic_dedup": true
+      },
+      "art-design-theory": {
+        "threshold": 6.8,
+        "topic_dedup": true
+      }
+    }
+  },
+  "display": {
+    "icon_style": "emoji"
+  },
+  "sources": {
+    "github": [
+      {
+        "type": "repo_releases",
+        "owner": "processing",
+        "repo": "p5.js",
+        "enabled": true,
+        "category": "creative-coding",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "w3c",
+        "repo": "aria",
+        "enabled": true,
+        "category": "accessibility",
+        "profile": "gix-intelligent-design"
+      }
+    ],
+    "hackernews": {
+      "enabled": false,
+      "fetch_top_stories": 20,
+      "min_score": 100,
+      "profile": "gix-intelligent-design"
+    },
+    "rss": [
+      {
+        "name": "Nielsen Norman Group",
+        "url": "https://www.nngroup.com/feed/rss/",
+        "enabled": true,
+        "category": "hci",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "name": "Microsoft Research",
+        "url": "https://www.microsoft.com/en-us/research/feed/",
+        "enabled": true,
+        "category": "design-research",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "name": "arXiv Human-Computer Interaction",
+        "url": "https://export.arxiv.org/api/query?search_query=cat%3Acs.HC&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending",
+        "enabled": true,
+        "category": "hci",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "name": "Cooper Hewitt Design Museum",
+        "url": "https://www.cooperhewitt.org/feed/",
+        "enabled": true,
+        "category": "museum-design",
+        "profile": ["gix-intelligent-design", "art-design-theory"]
+      },
+      {
+        "name": "Victoria and Albert Museum Blog",
+        "url": "https://www.vam.ac.uk/blog/feed",
+        "enabled": true,
+        "category": "art-history",
+        "profile": "art-design-theory"
+      },
+      {
+        "name": "Smithsonian Arts and Culture",
+        "url": "https://www.smithsonianmag.com/rss/arts-culture/",
+        "enabled": true,
+        "category": "art-history",
+        "profile": "art-design-theory"
+      },
+      {
+        "name": "Design Observer",
+        "url": "https://designobserver.com/feed/",
+        "enabled": true,
+        "category": "design-history",
+        "profile": "art-design-theory"
+      }
+    ],
+    "reddit": {
+      "enabled": false,
+      "subreddits": [],
+      "users": [],
+      "fetch_comments": 0
+    },
+    "twitter": {
+      "enabled": false,
+      "users": [],
+      "fetch_limit": 10,
+      "fetch_reply_text": false,
+      "max_replies_per_tweet": 0,
+      "max_tweets_to_expand": 0,
+      "reply_min_likes": 0,
+      "profile": "gix-intelligent-design"
+    },
+    "openbb": {
+      "enabled": false,
+      "fetch_filings": false,
+      "filings_provider": "sec",
+      "watchlists": []
+    },
+    "ossinsight": {
+      "enabled": false,
+      "period": "past_24_hours",
+      "languages": ["All"],
+      "keywords": [],
+      "min_stars": 10,
+      "max_items": 10,
+      "profile": "gix-intelligent-design"
+    },
+    "telegram": {
+      "enabled": false,
+      "channels": []
+    },
+    "gdelt": {
+      "enabled": false,
+      "query": "human computer interaction OR interaction design",
+      "mode": "ArtList",
+      "max_records": 30,
+      "timespan": null,
+      "language": null,
+      "country": null,
+      "category": "current-radar",
+      "profile": ["gix-intelligent-design", "art-design-theory"]
+    },
+    "google_news": {
+      "enabled": true,
+      "query": "清华美院 OR 智慧互联 OR 智能交互 OR 人机交互 OR 交互设计",
+      "language": "zh-CN",
+      "country": "CN",
+      "ceid": "CN:zh-Hans",
+      "max_results": 30,
+      "category": "current-radar",
+      "profile": ["gix-intelligent-design", "art-design-theory"]
+    }
+  },
+  "collection": {
+    "time_window_hours": 24
+  },
+  "digest": {
+    "max_items": 8,
+    "profile_order": ["gix-intelligent-design", "art-design-theory"],
+    "category_groups": {
+      "gix-core": {
+        "name": "GIX 核心动态",
+        "limit": 5,
+        "categories": ["hci", "ai-design", "design-research", "creative-coding", "accessibility", "current-radar"]
+      },
+      "history-theory": {
+        "name": "621 史论素材",
+        "limit": 3,
+        "categories": ["art-history", "design-history", "museum-design"]
+      }
+    },
+    "default_group": "other",
+    "default_group_limit": 1
+  },
+  "webhook": {
+    "enabled": false,
+    "url_env": "HORIZON_WEBHOOK_URL",
+    "delivery": "summary",
+    "overview_position": "first",
+    "platform": "feishu",
+    "layout": "markdown",
+    "fallback_layout": "markdown",
+    "languages": ["zh"],
+    "request_body": {
+      "msg_type": "interactive",
+      "card": {
+        "schema": "2.0",
+        "config": {
+          "wide_screen_mode": true
+        },
+        "header": {
+          "title": {
+            "tag": "plain_text",
+            "content": "#{message_title}"
+          },
+          "template": "purple"
+        },
+        "body": {
+          "elements": [
+            {
+              "tag": "markdown",
+              "content": "#{summary}"
+            }
+          ]
+        }
+      }
+    },
+    "headers": ""
+  }
+}

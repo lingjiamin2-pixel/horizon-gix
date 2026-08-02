@@ -1,0 +1,46 @@
+{
+  "id": "art-design-theory",
+  "name": "Art and Design History Theory",
+  "display_names": {
+    "zh": "621 中外美术设计史论素材",
+    "en": "Art and Design History Theory"
+  },
+  "match": "match.md",
+  "analysis": "analysis.md",
+  "content": {
+    "analysis_max_chars": 16000,
+    "enrichment_max_chars": 26000,
+    "sampling": "head-middle-tail"
+  },
+  "enrichment": {
+    "prompt": "enrichment.md",
+    "blocks": [
+      {
+        "id": "summary",
+        "type": "section",
+        "tools": [],
+        "primary": true
+      },
+      {
+        "id": "history_anchor",
+        "type": "section",
+        "tools": ["web_search"]
+      },
+      {
+        "id": "answer_material",
+        "type": "section",
+        "tools": []
+      },
+      {
+        "id": "visual_memory",
+        "type": "section",
+        "tools": []
+      },
+      {
+        "id": "english_drill",
+        "type": "section",
+        "tools": []
+      }
+    ]
+  }
+}
