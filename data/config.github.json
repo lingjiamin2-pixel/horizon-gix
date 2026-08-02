@@ -7,7 +7,10 @@
     "temperature": 0.2,
     "max_tokens": 4096,
     "throttle_sec": 0.5,
-    "languages": ["zh", "en"],
+    "languages": [
+      "zh",
+      "en"
+    ],
     "analysis_concurrency": 3,
     "enrichment_concurrency": 2
   },
@@ -80,7 +83,10 @@
         "url": "https://www.cooperhewitt.org/feed/",
         "enabled": true,
         "category": "museum-design",
-        "profile": ["gix-intelligent-design", "art-design-theory"]
+        "profile": [
+          "gix-intelligent-design",
+          "art-design-theory"
+        ]
       },
       {
         "name": "Victoria and Albert Museum Blog",
@@ -129,7 +135,9 @@
     "ossinsight": {
       "enabled": false,
       "period": "past_24_hours",
-      "languages": ["All"],
+      "languages": [
+        "All"
+      ],
       "keywords": [],
       "min_stars": 10,
       "max_items": 10,
@@ -148,7 +156,10 @@
       "language": null,
       "country": null,
       "category": "current-radar",
-      "profile": ["gix-intelligent-design", "art-design-theory"]
+      "profile": [
+        "gix-intelligent-design",
+        "art-design-theory"
+      ]
     },
     "google_news": {
       "enabled": true,
@@ -158,7 +169,10 @@
       "ceid": "CN:zh-Hans",
       "max_results": 30,
       "category": "current-radar",
-      "profile": ["gix-intelligent-design", "art-design-theory"]
+      "profile": [
+        "gix-intelligent-design",
+        "art-design-theory"
+      ]
     }
   },
   "collection": {
@@ -166,31 +180,47 @@
   },
   "digest": {
     "max_items": 8,
-    "profile_order": ["gix-intelligent-design", "art-design-theory"],
+    "profile_order": [
+      "gix-intelligent-design",
+      "art-design-theory"
+    ],
     "category_groups": {
       "gix-core": {
         "name": "GIX 核心动态",
         "limit": 5,
-        "categories": ["hci", "ai-design", "design-research", "creative-coding", "accessibility", "current-radar"]
+        "categories": [
+          "hci",
+          "ai-design",
+          "design-research",
+          "creative-coding",
+          "accessibility",
+          "current-radar"
+        ]
       },
       "history-theory": {
         "name": "621 史论素材",
         "limit": 3,
-        "categories": ["art-history", "design-history", "museum-design"]
+        "categories": [
+          "art-history",
+          "design-history",
+          "museum-design"
+        ]
       }
     },
     "default_group": "other",
     "default_group_limit": 1
   },
   "webhook": {
-    "enabled": false,
+    "enabled": true,
     "url_env": "HORIZON_WEBHOOK_URL",
     "delivery": "summary",
     "overview_position": "first",
     "platform": "feishu",
     "layout": "markdown",
     "fallback_layout": "markdown",
-    "languages": ["zh"],
+    "languages": [
+      "zh"
+    ],
     "request_body": {
       "msg_type": "interactive",
       "card": {
