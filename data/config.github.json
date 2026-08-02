@@ -7,10 +7,7 @@
     "temperature": 0.2,
     "max_tokens": 4096,
     "throttle_sec": 0.5,
-    "languages": [
-      "zh",
-      "en"
-    ],
+    "languages": ["zh", "en"],
     "analysis_concurrency": 3,
     "enrichment_concurrency": 2
   },
@@ -19,11 +16,11 @@
     "default_profile": "gix-intelligent-design",
     "profile_settings": {
       "gix-intelligent-design": {
-        "threshold": 7.2,
+        "threshold": 6.4,
         "topic_dedup": true
       },
       "art-design-theory": {
-        "threshold": 6.8,
+        "threshold": 6.2,
         "topic_dedup": true
       }
     }
@@ -48,12 +45,36 @@
         "enabled": true,
         "category": "accessibility",
         "profile": "gix-intelligent-design"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "ml5js",
+        "repo": "ml5-library",
+        "enabled": true,
+        "category": "creative-ai",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "openframeworks",
+        "repo": "openFrameworks",
+        "enabled": true,
+        "category": "creative-coding",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "type": "repo_releases",
+        "owner": "mrdoob",
+        "repo": "three.js",
+        "enabled": true,
+        "category": "spatial-web",
+        "profile": "gix-intelligent-design"
       }
     ],
     "hackernews": {
-      "enabled": false,
-      "fetch_top_stories": 20,
-      "min_score": 100,
+      "enabled": true,
+      "fetch_top_stories": 30,
+      "min_score": 120,
       "profile": "gix-intelligent-design"
     },
     "rss": [
@@ -72,6 +93,27 @@
         "profile": "gix-intelligent-design"
       },
       {
+        "name": "Google Research",
+        "url": "https://research.google/blog/rss/",
+        "enabled": true,
+        "category": "ai-design",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "name": "W3C News",
+        "url": "https://www.w3.org/news/feed/",
+        "enabled": true,
+        "category": "web-standards",
+        "profile": "gix-intelligent-design"
+      },
+      {
+        "name": "UX Collective",
+        "url": "https://uxdesign.cc/feed",
+        "enabled": true,
+        "category": "interaction-design",
+        "profile": "gix-intelligent-design"
+      },
+      {
         "name": "arXiv Human-Computer Interaction",
         "url": "https://export.arxiv.org/api/query?search_query=cat%3Acs.HC&start=0&max_results=10&sortBy=submittedDate&sortOrder=descending",
         "enabled": true,
@@ -83,10 +125,7 @@
         "url": "https://www.cooperhewitt.org/feed/",
         "enabled": true,
         "category": "museum-design",
-        "profile": [
-          "gix-intelligent-design",
-          "art-design-theory"
-        ]
+        "profile": ["gix-intelligent-design", "art-design-theory"]
       },
       {
         "name": "Victoria and Albert Museum Blog",
@@ -107,6 +146,20 @@
         "url": "https://designobserver.com/feed/",
         "enabled": true,
         "category": "design-history",
+        "profile": "art-design-theory"
+      },
+      {
+        "name": "Dezeen",
+        "url": "https://www.dezeen.com/feed/",
+        "enabled": true,
+        "category": "design-industry",
+        "profile": ["gix-intelligent-design", "art-design-theory"]
+      },
+      {
+        "name": "The Public Domain Review",
+        "url": "https://publicdomainreview.org/rss.xml",
+        "enabled": true,
+        "category": "art-history",
         "profile": "art-design-theory"
       }
     ],
@@ -135,9 +188,7 @@
     "ossinsight": {
       "enabled": false,
       "period": "past_24_hours",
-      "languages": [
-        "All"
-      ],
+      "languages": ["All"],
       "keywords": [],
       "min_stars": 10,
       "max_items": 10,
@@ -156,23 +207,17 @@
       "language": null,
       "country": null,
       "category": "current-radar",
-      "profile": [
-        "gix-intelligent-design",
-        "art-design-theory"
-      ]
+      "profile": ["gix-intelligent-design", "art-design-theory"]
     },
     "google_news": {
       "enabled": true,
-      "query": "清华美院 OR 智慧互联 OR 智能交互 OR 人机交互 OR 交互设计",
+      "query": "清华美院 OR 智慧互联 OR 智能交互 OR 人机交互 OR 交互设计 OR 服务设计 OR 体验设计 OR 数字艺术 OR 可穿戴 OR 混合现实",
       "language": "zh-CN",
       "country": "CN",
       "ceid": "CN:zh-Hans",
       "max_results": 30,
       "category": "current-radar",
-      "profile": [
-        "gix-intelligent-design",
-        "art-design-theory"
-      ]
+      "profile": ["gix-intelligent-design", "art-design-theory"]
     }
   },
   "collection": {
@@ -180,31 +225,17 @@
   },
   "digest": {
     "max_items": 8,
-    "profile_order": [
-      "gix-intelligent-design",
-      "art-design-theory"
-    ],
+    "profile_order": ["gix-intelligent-design", "art-design-theory"],
     "category_groups": {
       "gix-core": {
         "name": "GIX 核心动态",
         "limit": 5,
-        "categories": [
-          "hci",
-          "ai-design",
-          "design-research",
-          "creative-coding",
-          "accessibility",
-          "current-radar"
-        ]
+        "categories": ["hci", "ai-design", "design-research", "creative-coding", "creative-ai", "spatial-web", "accessibility", "web-standards", "interaction-design", "design-industry", "tech-zeitgeist", "current-radar"]
       },
       "history-theory": {
         "name": "621 史论素材",
         "limit": 3,
-        "categories": [
-          "art-history",
-          "design-history",
-          "museum-design"
-        ]
+        "categories": ["art-history", "design-history", "museum-design"]
       }
     },
     "default_group": "other",
@@ -218,9 +249,7 @@
     "platform": "feishu",
     "layout": "markdown",
     "fallback_layout": "markdown",
-    "languages": [
-      "zh"
-    ],
+    "languages": ["zh"],
     "request_body": {
       "msg_type": "interactive",
       "card": {

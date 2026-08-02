@@ -11,6 +11,7 @@ import httpx
 
 from src.scrapers.github import GitHubScraper
 from src.scrapers.google_news import GoogleNewsScraper
+from src.scrapers.hackernews import HackerNewsScraper
 from src.storage.manager import StorageManager
 
 
@@ -42,6 +43,9 @@ async def main() -> int:
         since = datetime.now(timezone.utc) - timedelta(hours=24)
         google_items = await GoogleNewsScraper(config.sources.google_news, client).fetch(since)
         github_items = await GitHubScraper(config.sources.github, client).fetch(since)
+        hackernews_items = await HackerNewsScraper(
+            config.sources.hackernews, client
+        ).fetch(since)
 
     failures = 0
     for name, result in results:
@@ -50,6 +54,7 @@ async def main() -> int:
             failures += 1
     print(f"Google News query: OK, {len(google_items)} recent items")
     print(f"GitHub release sources: OK, {len(github_items)} releases in the last 24 hours")
+    print(f"Hacker News: OK, {len(hackernews_items)} qualifying recent items")
     return 1 if failures else 0
 
 
