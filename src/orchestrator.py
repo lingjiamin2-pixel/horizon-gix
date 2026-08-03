@@ -299,37 +299,58 @@ class HorizonOrchestrator:
                 and item.processing.analysis.score is not None
             ]
             failed_analysis_count = len(analyzed_items) - len(scored_items)
-            if not scored_items:
-                raise RuntimeError(
-                    "AI analysis failed for every fetched item. Check the DeepSeek "
-                    "API key, account balance, model availability, and Actions logs."
-                )
-            scores = [item.processing.analysis.score for item in scored_items]
-            self.console.print(
-                f"{self.icons['detail']} AI scoring health: "
-                f"{len(scored_items)} valid, {failed_analysis_count} failed, "
-                f"range {min(scores):g}-{max(scores):g}/10\n"
-            )
-
-            # 5. Filter, deduplicate, and balance the digest
-            filtering_result = await self.select_digest_items(
-                analyzed_items,
-            )
-            important_items = filtering_result.items
+            ai_unavailable = not scored_items
             fallback_used = False
-            if not important_items and self.config.digest.fallback_items > 0:
-                scored_items.sort(
-                    key=lambda item: item.processing.analysis.score,
-                    reverse=True,
-                )
-                important_items = scored_items[: self.config.digest.fallback_items]
-                fallback_used = bool(important_items)
-                if fallback_used:
-                    self.console.print(
-                        f"[yellow]{self.icons['warning']} No item met its profile "
-                        f"threshold; using the top {len(important_items)} valid "
-                        "AI-scored candidates as a fallback.\n[/yellow]"
+            if ai_unavailable:
+                fallback_limit = self.config.digest.fallback_items
+                if fallback_limit <= 0:
+                    raise RuntimeError(
+                        "AI analysis failed for every fetched item and digest fallback "
+                        "is disabled. Check the DeepSeek API key, account balance, "
+                        "model availability, and Actions logs."
                     )
+                important_items = self._select_unscored_fallback_items(
+                    analyzed_items,
+                    fallback_limit,
+                )
+                if not important_items:
+                    raise RuntimeError(
+                        "AI analysis failed for every fetched item and no raw item "
+                        "was eligible for the degraded digest."
+                    )
+                fallback_used = True
+                self.console.print(
+                    f"[yellow]{self.icons['warning']} AI analysis failed for every "
+                    f"item; sending {len(important_items)} recent, source-diverse raw "
+                    "candidates so the daily briefing is not empty. Check the DeepSeek "
+                    "API key and account balance.\n[/yellow]"
+                )
+            else:
+                scores = [item.processing.analysis.score for item in scored_items]
+                self.console.print(
+                    f"{self.icons['detail']} AI scoring health: "
+                    f"{len(scored_items)} valid, {failed_analysis_count} failed, "
+                    f"range {min(scores):g}-{max(scores):g}/10\n"
+                )
+
+                # 5. Filter, deduplicate, and balance the digest
+                filtering_result = await self.select_digest_items(
+                    analyzed_items,
+                )
+                important_items = filtering_result.items
+                if not important_items and self.config.digest.fallback_items > 0:
+                    scored_items.sort(
+                        key=lambda item: item.processing.analysis.score,
+                        reverse=True,
+                    )
+                    important_items = scored_items[: self.config.digest.fallback_items]
+                    fallback_used = bool(important_items)
+                    if fallback_used:
+                        self.console.print(
+                            f"[yellow]{self.icons['warning']} No item met its profile "
+                            f"threshold; using the top {len(important_items)} valid "
+                            "AI-scored candidates as a fallback.\n[/yellow]"
+                        )
 
             # Show per-sub-source selection breakdown
             selected_counts: Dict[str, int] = defaultdict(int)
@@ -341,7 +362,8 @@ class HorizonOrchestrator:
             self.console.print("")
 
             # 6. Search related stories + enrich with background knowledge (2nd AI pass)
-            await self.enrich_items(important_items)
+            if not ai_unavailable:
+                await self.enrich_items(important_items)
 
             # 7. Generate and save daily summaries for each configured language
             today = _report_date()
@@ -356,6 +378,7 @@ class HorizonOrchestrator:
                     len(all_items),
                     language=lang,
                     fallback=fallback_used,
+                    ai_unavailable=ai_unavailable,
                 )
 
                 # Save to data/summaries/
@@ -457,6 +480,57 @@ class HorizonOrchestrator:
                 )
 
             raise
+
+    def _select_unscored_fallback_items(
+        self,
+        items: List[ContentItem],
+        limit: int,
+    ) -> List[ContentItem]:
+        """Select recent raw items while maximizing profile/source diversity."""
+        if limit <= 0:
+            return []
+
+        candidates = [
+            item
+            for item in items
+            if item.processing and item.processing.analysis
+        ]
+        candidates.sort(key=lambda item: item.published_at, reverse=True)
+
+        selected: List[ContentItem] = []
+        selected_ids: set[str] = set()
+        seen_routes: set[tuple[str, str]] = set()
+        for item in candidates:
+            route = (
+                item.processing.classification.profile,
+                self._sub_source_label(item),
+            )
+            if route in seen_routes:
+                continue
+            selected.append(item)
+            selected_ids.add(item.id)
+            seen_routes.add(route)
+            if len(selected) >= limit:
+                break
+
+        if len(selected) < limit:
+            for item in candidates:
+                if item.id in selected_ids:
+                    continue
+                selected.append(item)
+                selected_ids.add(item.id)
+                if len(selected) >= limit:
+                    break
+
+        for item in selected:
+            analysis = item.processing.analysis
+            raw_summary = " ".join((item.content or "").split()).strip()
+            if raw_summary:
+                analysis.summary = raw_summary[:500]
+            analysis.reason = (
+                "AI analysis unavailable; selected by recency and source diversity."
+            )
+        return selected
 
     def _determine_time_window(self, force_hours: int = None) -> datetime:
         if force_hours:

@@ -60,6 +60,11 @@ LABELS = {
             "No item met its profile threshold; showing the {selected} "
             "highest valid AI-scored candidates as a fallback."
         ),
+        "ai_unavailable_items": (
+            "AI analysis is temporarily unavailable; showing {selected} recent, "
+            "source-diverse raw candidates so this briefing is not empty. Scores "
+            "are marked as ?. Check the DeepSeek API key and account balance."
+        ),
         "empty_analyzed": "Analyzed {total} items, but none met the importance threshold.",
         "empty_body": (
             "No significant developments today. This might indicate:\n"
@@ -83,6 +88,10 @@ LABELS = {
         "fallback_items": (
             "本轮没有条目达到 Profile 阈值；为避免空报，展示有效 AI 评分最高的 "
             "{selected} 条候选素材。"
+        ),
+        "ai_unavailable_items": (
+            "AI 分析暂不可用；为避免空报，先展示 {selected} 条按时间与来源多样性选择的"
+            "原始候选。评分以 ? 标记，请检查 DeepSeek API 密钥与账户余额。"
         ),
         "empty_analyzed": "已分析 {total} 条内容，但没有达到重要性阈值的条目。",
         "empty_body": (
@@ -222,6 +231,7 @@ class DailySummarizer:
         total_fetched: int,
         language: str = "en",
         fallback: bool = False,
+        ai_unavailable: bool = False,
     ) -> str:
         """Generate daily summary in Markdown format.
 
@@ -233,6 +243,7 @@ class DailySummarizer:
             total_fetched: Total number of items fetched before filtering
             language: Output language, either "en" or "zh"
             fallback: Whether these are below-threshold fallback candidates
+            ai_unavailable: Whether raw candidates are used because every AI call failed
 
         Returns:
             str: Markdown formatted summary
@@ -242,13 +253,16 @@ class DailySummarizer:
         if not items:
             return self._generate_empty_summary(date, total_fetched, labels)
 
-        selection_label = (
-            labels["fallback_items"].format(selected=len(items))
-            if fallback
-            else labels["selected_items"].format(
+        if ai_unavailable:
+            selection_label = labels["ai_unavailable_items"].format(
+                selected=len(items)
+            )
+        elif fallback:
+            selection_label = labels["fallback_items"].format(selected=len(items))
+        else:
+            selection_label = labels["selected_items"].format(
                 total=total_fetched, selected=len(items)
             )
-        )
         header = (
             f"# {labels['header']} - {date}\n\n"
             f"> {selection_label}\n\n"

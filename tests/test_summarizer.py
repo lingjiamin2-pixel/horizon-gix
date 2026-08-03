@@ -173,6 +173,28 @@ def test_generate_summary_marks_below_threshold_fallback_candidates():
     assert "筛选出 2 条重要资讯" not in result
 
 
+def test_generate_summary_marks_ai_unavailable_raw_candidates():
+    items = [_make_item(1), _make_item(2)]
+    for item in items:
+        item.processing.analysis.score = None
+
+    result = _run_async(
+        DailySummarizer().generate_summary(
+            items,
+            date="2026-08-03",
+            total_fetched=48,
+            language="zh",
+            fallback=True,
+            ai_unavailable=True,
+        )
+    )
+
+    assert "AI 分析暂不可用" in result
+    assert "按时间与来源多样性选择的原始候选" in result
+    assert "评分以 ? 标记" in result
+    assert "有效 AI 评分最高" not in result
+
+
 def test_generate_summary_groups_items_by_profile_with_heading_hierarchy():
     news = _make_item(1)
     blog = _make_item(2)

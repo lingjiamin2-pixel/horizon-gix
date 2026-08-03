@@ -352,7 +352,7 @@ def test_run_uses_top_scored_fallback_when_threshold_selects_nothing(
     assert enriched_ids == ["highest", "middle"]
 
 
-def test_run_fails_loudly_when_every_ai_analysis_failed(tmp_path, monkeypatch) -> None:
+def test_run_uses_raw_fallback_when_every_ai_analysis_failed(tmp_path, monkeypatch) -> None:
     config = Config(
         ai=AIConfig(
             provider="openai",
@@ -364,8 +364,10 @@ def test_run_fails_loudly_when_every_ai_analysis_failed(tmp_path, monkeypatch) -
         digest=DigestConfig(fallback_items=2),
     )
     orchestrator = HorizonOrchestrator(config, SimpleNamespace())
+    orchestrator.console = Console(record=True)
     items = [make_item("failed", 5.0, "ai")]
     items[0].processing.analysis.score = None
+    items[0].content = "Raw source context that remains useful without AI."
 
     async def fetch_all_sources(since):  # type: ignore[no-untyped-def]
         return items
@@ -373,12 +375,27 @@ def test_run_fails_loudly_when_every_ai_analysis_failed(tmp_path, monkeypatch) -
     async def analyze_content(input_items):  # type: ignore[no-untyped-def]
         return input_items
 
+    async def enrich_important_items(input_items):  # type: ignore[no-untyped-def]
+        raise AssertionError("degraded raw fallback must not retry AI enrichment")
+
     monkeypatch.setattr(orchestrator, "fetch_all_sources", fetch_all_sources)
     monkeypatch.setattr(orchestrator, "analyze_items", analyze_content)
+    monkeypatch.setattr(orchestrator, "enrich_items", enrich_important_items)
     monkeypatch.chdir(tmp_path)
 
-    with pytest.raises(RuntimeError, match="AI analysis failed for every fetched item"):
-        asyncio.run(orchestrator.run())
+    asyncio.run(orchestrator.run())
+
+    console_text = orchestrator.console.export_text()
+    assert "AI analysis failed for every item" in console_text
+    assert "source-diverse raw" in console_text
+    selected = orchestrator._select_unscored_fallback_items(items, 2)
+    assert selected == items
+    assert items[0].processing.analysis.summary == (
+        "Raw source context that remains useful without AI."
+    )
+    assert "selected by recency and source diversity" in (
+        items[0].processing.analysis.reason
+    )
 
 
 def test_run_balances_after_twitter_reanalysis(tmp_path, monkeypatch) -> None:
