@@ -56,6 +56,10 @@ LABELS = {
         "references": "References",
         "tags": "Tags",
         "selected_items": "From {total} items, {selected} important content pieces were selected",
+        "fallback_items": (
+            "No item met its profile threshold; showing the {selected} "
+            "highest valid AI-scored candidates as a fallback."
+        ),
         "empty_analyzed": "Analyzed {total} items, but none met the importance threshold.",
         "empty_body": (
             "No significant developments today. This might indicate:\n"
@@ -76,6 +80,10 @@ LABELS = {
         "references": "参考链接",
         "tags": "标签",
         "selected_items": "从 {total} 条内容中筛选出 {selected} 条重要资讯。",
+        "fallback_items": (
+            "本轮没有条目达到 Profile 阈值；为避免空报，展示有效 AI 评分最高的 "
+            "{selected} 条候选素材。"
+        ),
         "empty_analyzed": "已分析 {total} 条内容，但没有达到重要性阈值的条目。",
         "empty_body": (
             "今日暂无重要动态，可能原因：\n"
@@ -213,6 +221,7 @@ class DailySummarizer:
         date: str,
         total_fetched: int,
         language: str = "en",
+        fallback: bool = False,
     ) -> str:
         """Generate daily summary in Markdown format.
 
@@ -223,6 +232,7 @@ class DailySummarizer:
             date: Date string (YYYY-MM-DD)
             total_fetched: Total number of items fetched before filtering
             language: Output language, either "en" or "zh"
+            fallback: Whether these are below-threshold fallback candidates
 
         Returns:
             str: Markdown formatted summary
@@ -232,9 +242,16 @@ class DailySummarizer:
         if not items:
             return self._generate_empty_summary(date, total_fetched, labels)
 
+        selection_label = (
+            labels["fallback_items"].format(selected=len(items))
+            if fallback
+            else labels["selected_items"].format(
+                total=total_fetched, selected=len(items)
+            )
+        )
         header = (
             f"# {labels['header']} - {date}\n\n"
-            f"> {labels['selected_items'].format(total=total_fetched, selected=len(items))}\n\n"
+            f"> {selection_label}\n\n"
             "---\n\n"
         )
 

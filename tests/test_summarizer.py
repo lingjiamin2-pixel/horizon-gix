@@ -157,6 +157,22 @@ def test_generate_summary_zh_uses_localized_selection_header_and_numeric_date():
     assert "Apr 25, 08:00" not in result
 
 
+def test_generate_summary_marks_below_threshold_fallback_candidates():
+    result = _run_async(
+        DailySummarizer().generate_summary(
+            [_make_item(1), _make_item(2)],
+            date="2026-04-25",
+            total_fetched=10,
+            language="zh",
+            fallback=True,
+        )
+    )
+
+    assert "本轮没有条目达到 Profile 阈值" in result
+    assert "有效 AI 评分最高的 2 条候选素材" in result
+    assert "筛选出 2 条重要资讯" not in result
+
+
 def test_generate_summary_groups_items_by_profile_with_heading_hierarchy():
     news = _make_item(1)
     blog = _make_item(2)

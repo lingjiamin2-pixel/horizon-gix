@@ -21,7 +21,7 @@ from src.models import (
     SourceType,
     SourcesConfig,
 )
-from src.orchestrator import HorizonOrchestrator
+from src.orchestrator import HorizonOrchestrator, _report_date
 from src.processing import ProfileRegistry
 
 
@@ -230,6 +230,7 @@ def test_duplicate_category_warns_and_first_group_wins() -> None:
     "kwargs",
     [
         {"max_items": 0},
+        {"fallback_items": -1},
         {"default_group_limit": 0},
         {"category_groups": {"ai": {"limit": 0, "categories": ["ai"]}}},
         {"category_groups": {"ai": {"limit": 1, "categories": []}}},
@@ -298,6 +299,86 @@ def test_run_applies_balanced_digest_before_enrichment(tmp_path, monkeypatch) ->
     asyncio.run(orchestrator.run())
 
     assert enriched_ids == ["ai"]
+
+
+def test_report_date_uses_configured_timezone(monkeypatch) -> None:
+    monkeypatch.setenv("HORIZON_TIMEZONE", "Asia/Shanghai")
+
+    assert _report_date(datetime(2026, 8, 2, 21, 17, tzinfo=timezone.utc)) == "2026-08-03"
+
+
+def test_run_uses_top_scored_fallback_when_threshold_selects_nothing(
+    tmp_path, monkeypatch
+) -> None:
+    config = Config(
+        ai=AIConfig(
+            provider="openai",
+            model="test",
+            api_key_env="TEST_API_KEY",
+            languages=[],
+        ),
+        sources=SourcesConfig(),
+        processing=ProcessingConfig(
+            profile_settings={
+                "tech-news": ProfileSettingsConfig(threshold=7.0)
+            }
+        ),
+        digest=DigestConfig(fallback_items=2),
+    )
+    orchestrator = HorizonOrchestrator(config, SimpleNamespace())
+    items = [
+        make_item("middle", 5.0, "ai"),
+        make_item("highest", 6.5, "ai"),
+        make_item("lowest", 4.0, "ai"),
+    ]
+    enriched_ids: list[str] = []
+
+    async def fetch_all_sources(since):  # type: ignore[no-untyped-def]
+        return items
+
+    async def analyze_content(input_items):  # type: ignore[no-untyped-def]
+        return input_items
+
+    async def enrich_important_items(input_items):  # type: ignore[no-untyped-def]
+        enriched_ids.extend(item.id for item in input_items)
+
+    monkeypatch.setattr(orchestrator, "fetch_all_sources", fetch_all_sources)
+    monkeypatch.setattr(orchestrator, "analyze_items", analyze_content)
+    monkeypatch.setattr(orchestrator, "enrich_items", enrich_important_items)
+    monkeypatch.chdir(tmp_path)
+
+    asyncio.run(orchestrator.run())
+
+    assert enriched_ids == ["highest", "middle"]
+
+
+def test_run_fails_loudly_when_every_ai_analysis_failed(tmp_path, monkeypatch) -> None:
+    config = Config(
+        ai=AIConfig(
+            provider="openai",
+            model="test",
+            api_key_env="TEST_API_KEY",
+            languages=[],
+        ),
+        sources=SourcesConfig(),
+        digest=DigestConfig(fallback_items=2),
+    )
+    orchestrator = HorizonOrchestrator(config, SimpleNamespace())
+    items = [make_item("failed", 5.0, "ai")]
+    items[0].processing.analysis.score = None
+
+    async def fetch_all_sources(since):  # type: ignore[no-untyped-def]
+        return items
+
+    async def analyze_content(input_items):  # type: ignore[no-untyped-def]
+        return input_items
+
+    monkeypatch.setattr(orchestrator, "fetch_all_sources", fetch_all_sources)
+    monkeypatch.setattr(orchestrator, "analyze_items", analyze_content)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(RuntimeError, match="AI analysis failed for every fetched item"):
+        asyncio.run(orchestrator.run())
 
 
 def test_run_balances_after_twitter_reanalysis(tmp_path, monkeypatch) -> None:

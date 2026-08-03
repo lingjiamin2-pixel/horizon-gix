@@ -225,6 +225,7 @@
   },
   "digest": {
     "max_items": 8,
+    "fallback_items": 2,
     "profile_order": ["gix-intelligent-design", "art-design-theory"],
     "category_groups": {
       "gix-core": {

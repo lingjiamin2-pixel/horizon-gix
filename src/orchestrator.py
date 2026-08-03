@@ -1,12 +1,14 @@
 """Main orchestrator coordinating the entire workflow."""
 
 import asyncio
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Literal, Optional
 from urllib.parse import unquote_plus, urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import httpx
 from rich.console import Console
 
@@ -48,6 +50,21 @@ _TRACKING_QUERY_PARAMETERS = {
     "twclid",
     "vero_id",
 }
+
+
+def _report_date(now: Optional[datetime] = None) -> str:
+    """Return the report date in the configured presentation timezone."""
+    timezone_name = os.getenv("HORIZON_TIMEZONE", "UTC").strip() or "UTC"
+    try:
+        report_timezone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise RuntimeError(
+            f"Unknown HORIZON_TIMEZONE value: {timezone_name!r}"
+        ) from exc
+    instant = now or datetime.now(timezone.utc)
+    if instant.tzinfo is None:
+        instant = instant.replace(tzinfo=timezone.utc)
+    return instant.astimezone(report_timezone).strftime("%Y-%m-%d")
 
 
 def _deduplication_url_key(url: str) -> tuple[str, str, str, str, Optional[int], str, str]:
@@ -274,11 +291,45 @@ class HorizonOrchestrator:
                 f"{self.icons['ai']} Analyzed {len(analyzed_items)} items with AI\n"
             )
 
+            scored_items = [
+                item
+                for item in analyzed_items
+                if item.processing
+                and item.processing.analysis
+                and item.processing.analysis.score is not None
+            ]
+            failed_analysis_count = len(analyzed_items) - len(scored_items)
+            if not scored_items:
+                raise RuntimeError(
+                    "AI analysis failed for every fetched item. Check the DeepSeek "
+                    "API key, account balance, model availability, and Actions logs."
+                )
+            scores = [item.processing.analysis.score for item in scored_items]
+            self.console.print(
+                f"{self.icons['detail']} AI scoring health: "
+                f"{len(scored_items)} valid, {failed_analysis_count} failed, "
+                f"range {min(scores):g}-{max(scores):g}/10\n"
+            )
+
             # 5. Filter, deduplicate, and balance the digest
             filtering_result = await self.select_digest_items(
                 analyzed_items,
             )
             important_items = filtering_result.items
+            fallback_used = False
+            if not important_items and self.config.digest.fallback_items > 0:
+                scored_items.sort(
+                    key=lambda item: item.processing.analysis.score,
+                    reverse=True,
+                )
+                important_items = scored_items[: self.config.digest.fallback_items]
+                fallback_used = bool(important_items)
+                if fallback_used:
+                    self.console.print(
+                        f"[yellow]{self.icons['warning']} No item met its profile "
+                        f"threshold; using the top {len(important_items)} valid "
+                        "AI-scored candidates as a fallback.\n[/yellow]"
+                    )
 
             # Show per-sub-source selection breakdown
             selected_counts: Dict[str, int] = defaultdict(int)
@@ -293,13 +344,19 @@ class HorizonOrchestrator:
             await self.enrich_items(important_items)
 
             # 7. Generate and save daily summaries for each configured language
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            today = _report_date()
             for lang in self.config.ai.languages:
                 summarizer = DailySummarizer(
                     profile_names=self.profiles.names,
                     profile_order=self.config.digest.profile_order,
                 )
-                summary = await summarizer.generate_summary(important_items, today, len(all_items), language=lang)
+                summary = await summarizer.generate_summary(
+                    important_items,
+                    today,
+                    len(all_items),
+                    language=lang,
+                    fallback=fallback_used,
+                )
 
                 # Save to data/summaries/
                 summary_path = self.storage.save_daily_summary(today, summary, language=lang)
@@ -395,7 +452,7 @@ class HorizonOrchestrator:
             # Send webhook failure notification if configured
             if self.webhook_notifier:
                 await self.webhook_notifier.send_failure(
-                    date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                    date=_report_date(),
                     error_message=str(e),
                 )
 
